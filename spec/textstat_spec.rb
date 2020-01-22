@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rspec'
 require_relative '../lib/textstat.rb'
 
@@ -53,110 +55,110 @@ describe TextStat do
   end
 
   context 'When testing the TextStat class' do
-    it 'should return the correct number of chars' do
-      count = TextStat.char_count(@long_test)
-      count_spaces = TextStat.char_count(@long_test, false)
+    it 'returns the correct number of chars' do
+      count = described_class.char_count(@long_test)
+      count_spaces = described_class.char_count(@long_test, false)
 
-      expect(count).to eql 1750
-      expect(count_spaces).to eql 2123
+      expect(count).to eq 1750
+      expect(count_spaces).to eq 2123
     end
 
-    it 'should return the correct number of lexicons' do
-      count = TextStat.lexicon_count(@long_test)
-      count_punctuation = TextStat.lexicon_count(@long_test, false)
+    it 'returns the correct number of lexicons' do
+      count = described_class.lexicon_count(@long_test)
+      count_punctuation = described_class.lexicon_count(@long_test, false)
 
-      expect(count).to eql 372
-      expect(count_punctuation).to eql 376
+      expect(count).to eq 372
+      expect(count_punctuation).to eq 376
     end
 
-    it 'should return the correct number of syllables' do
-      count = TextStat.syllable_count(@long_test)
-      expect(count).to eql 559
+    it 'returns the correct number of syllables' do
+      count = described_class.syllable_count(@long_test)
+      expect(count).to eq 559
     end
 
-    it 'should return the correct number of sentences' do
-      count = TextStat.sentence_count(@long_test)
-      expect(count).to eql 16
+    it 'returns the correct number of sentences' do
+      count = described_class.sentence_count(@long_test)
+      expect(count).to eq 16
     end
 
-    it 'should return the correct average sentence length' do
-      avg = TextStat.avg_sentence_length(@long_test)
-      expect(avg).to eql 23.3
+    it 'returns the correct average sentence length' do
+      avg = described_class.avg_sentence_length(@long_test)
+      expect(avg).to eq 23.3
     end
 
-    it 'should return the correct average syllables per word' do
-      avg = TextStat.avg_syllables_per_word(@long_test)
-      expect(avg).to eql 1.5
+    it 'returns the correct average syllables per word' do
+      avg = described_class.avg_syllables_per_word(@long_test)
+      expect(avg).to eq 1.5
     end
 
-    it 'should return the correct average letters per word' do
-      avg = TextStat.avg_letter_per_word(@long_test)
-      expect(avg).to eql 4.7
+    it 'returns the correct average letters per word' do
+      avg = described_class.avg_letter_per_word(@long_test)
+      expect(avg).to eq 4.7
     end
 
-    it 'should return the correct average sentence per word' do
-      avg = TextStat.avg_sentence_per_word(@long_test)
-      expect(avg).to eql 0.04
+    it 'returns the correct average sentence per word' do
+      avg = described_class.avg_sentence_per_word(@long_test)
+      expect(avg).to eq 0.04
     end
 
-    it 'should return the correct Flesch reading-ease test score' do
-      score = TextStat.flesch_reading_ease(@long_test)
-      expect(score).to eql 56.29
+    it 'returns the correct Flesch reading-ease test score' do
+      score = described_class.flesch_reading_ease(@long_test)
+      expect(score).to eq 56.29
     end
 
-    it 'should return the correct Flesch–Kincaid grade' do
-      score = TextStat.flesch_kincaid_grade(@long_test)
-      expect(score).to eql 11.2
+    it 'returns the correct Flesch–Kincaid grade' do
+      score = described_class.flesch_kincaid_grade(@long_test)
+      expect(score).to eq 11.2
     end
 
-    it 'should return the correct number of polysyllab' do
-      count = TextStat.polysyllab_count(@long_test)
-      expect(count).to eql 43
+    it 'returns the correct number of polysyllab' do
+      count = described_class.polysyllab_count(@long_test)
+      expect(count).to eq 43
     end
 
-    it 'should return the correct smog index' do
-      index = TextStat.smog_index(@long_test)
-      expect(index).to eql 11.2
+    it 'returns the correct smog index' do
+      index = described_class.smog_index(@long_test)
+      expect(index).to eq 11.2
     end
 
-    it 'should return the correct Coleman–Liau index' do
-      index = TextStat.coleman_liau_index(@long_test)
-      expect(index).to eql 10.28
+    it 'returns the correct Coleman–Liau index' do
+      index = described_class.coleman_liau_index(@long_test)
+      expect(index).to eq 10.65
     end
 
-    it 'should return the correct automated readability index' do
-      index = TextStat.automated_readability_index(@long_test)
-      expect(index).to eql 12.3
+    it 'returns the correct automated readability index' do
+      index = described_class.automated_readability_index(@long_test)
+      expect(index).to eq 12.4
     end
 
-    it 'should return the correct linsear write formula result' do
-      result = TextStat.linsear_write_formula(@long_test)
-      expect(result).to eql 14.5
+    it 'returns the correct linsear write formula result' do
+      result = described_class.linsear_write_formula(@long_test)
+      expect(result).to eq 14.875
     end
 
-    it 'should return the correct difficult words result' do
-      result = TextStat.difficult_words(@long_test)
-      expect(result).to eql 58
+    it 'returns the correct difficult words result' do
+      result = described_class.difficult_words(@long_test)
+      expect(result).to eq 58
     end
 
-    it 'should return the correct Dale–Chall readability score' do
-      score = TextStat.dale_chall_readability_score(@long_test)
-      expect(score).to eql 4.79
+    it 'returns the correct Dale–Chall readability score' do
+      score = described_class.dale_chall_readability_score(@long_test)
+      expect(score).to eq 7.25
     end
 
-    it 'should return the correct Gunning fog score' do
-      score = TextStat.gunning_fog(@long_test)
-      expect(score).to eql 11.32
+    it 'returns the correct Gunning fog score' do
+      score = described_class.gunning_fog(@long_test)
+      expect(score).to eq 17.56
     end
 
-    it 'should return the correct Lix readability test score' do
-      score = TextStat.lix(@long_test)
-      expect(score).to eql 45.11
+    it 'returns the correct Lix readability test score' do
+      score = described_class.lix(@long_test)
+      expect(score).to eq 45.11
     end
 
-    it 'should return the readability consensus score' do
-      standard = TextStat.text_standard(@long_test)
-      expect(standard).to eql '10th and 11th grade'
+    it 'returns the readability consensus score' do
+      standard = described_class.text_standard(@long_test)
+      expect(standard).to eq '10th and 11th grade'
     end
 
     describe '.dictionary_path' do

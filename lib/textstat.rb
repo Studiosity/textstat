@@ -1,86 +1,121 @@
+# frozen_string_literal: true
+
 require 'text-hyphen'
 
 class TextStat
   GEM_PATH = File.dirname(File.dirname(__FILE__))
 
-  def self.char_count(text, ignore_spaces = true)
+  class << self
+    attr_writer :dictionary_path
+  end
+
+  def self.dictionary_path
+    @dictionary_path ||= File.join(TextStat::GEM_PATH, 'lib', 'dictionaries')
+  end
+
+  def self.syllable_count(text, language = 'en_us')
+    new(language).syllable_count text
+  end
+
+  def self.difficult_words(text, language = 'en_us')
+    new(language).difficult_words text
+  end
+
+  def self.method_missing(method_name, *args, &block)
+    if proxyable_instance_methods.include? method_name.to_sym
+      new.public_send(method_name, *args)
+    else
+      super
+    end
+  end
+
+  def self.respond_to_missing?(method_name, *)
+    proxyable_instance_methods.include?(method_name.to_sym) || super
+  end
+
+  def self.proxyable_instance_methods
+    TextStat.public_instance_methods - Object.public_instance_methods
+  end
+  private_class_method :proxyable_instance_methods
+
+  def initialize(language = 'en_us')
+    @language = language
+  end
+
+  def char_count(text, ignore_spaces = true)
     text = text.delete(' ') if ignore_spaces
     text.length
   end
 
-  def self.lexicon_count(text, remove_punctuation = true)
-    text  = text.gsub(/[^a-zA-Z\s]/, '').squeeze(' ') if remove_punctuation
-    count = text.split(' ').count
-    count
+  def lexicon_count(text, remove_punctuation = true)
+    text = text.gsub(/[^a-zA-Z\s]/, '').squeeze(' ') if remove_punctuation
+    text.split(' ').count
   end
 
-  def self.syllable_count(text, language = 'en_us')
+  def syllable_count(text)
     return 0 if text.empty?
 
     text = text.downcase
     text.gsub(/[^a-zA-Z\s]/, '').squeeze(' ')
-    dictionary = Text::Hyphen.new(language: language, left: 0, right: 0)
     count = 0
     text.split(' ').each do |word|
       word_hyphenated = dictionary.visualise(word)
-      count += [1, word_hyphenated.count('-') + 1].max
+      count += word_hyphenated.count('-') + 1
     end
     count
   end
 
-  def self.sentence_count(text)
+  def sentence_count(text)
     text.scan(/[\.\?!][\'\\)\]]*[ |\n][A-Z]/).map(&:strip).count + 1
   end
 
-  def self.avg_sentence_length(text)
-    asl = lexicon_count(text).to_f / sentence_count(text).to_f
+  def avg_sentence_length(text)
+    asl = lexicon_count(text).to_f / sentence_count(text)
     asl.round(1)
   rescue ZeroDivisionError
     0.0
   end
 
-  def self.avg_syllables_per_word(text)
+  def avg_syllables_per_word(text)
     syllable = syllable_count(text)
-    words    = lexicon_count(text)
+    words = lexicon_count(text)
     begin
-      syllables_per_word = syllable.to_f / words.to_f
-      return syllables_per_word.round(1)
+      syllables_per_word = syllable.to_f / words
+      syllables_per_word.round(1)
     rescue ZeroDivisionError
-      return 0.0
+      0.0
     end
   end
 
-  def self.avg_letter_per_word(text)
-    letters_per_word = char_count(text).to_f / lexicon_count(text).to_f
+  def avg_letter_per_word(text)
+    letters_per_word = char_count(text).to_f / lexicon_count(text)
     letters_per_word.round(2)
   rescue ZeroDivisionError
     0.0
   end
 
-  def self.avg_sentence_per_word(text)
-    sentence_per_word = sentence_count(text).to_f / lexicon_count(text).to_f
+  def avg_sentence_per_word(text)
+    sentence_per_word = sentence_count(text).to_f / lexicon_count(text)
     sentence_per_word.round(2)
   rescue ZeroDivisionError
     0.0
   end
 
-  def self.flesch_reading_ease(text)
-    sentence_length    = avg_sentence_length(text)
+  def flesch_reading_ease(text)
+    sentence_length = avg_sentence_length(text)
     syllables_per_word = avg_syllables_per_word(text)
-    flesch = (
-    206.835 - (1.015 * sentence_length).to_f - (84.6 * syllables_per_word).to_f
-    )
+    flesch = 206.835 - 1.015 * sentence_length - 84.6 * syllables_per_word
     flesch.round(2)
   end
 
-  def self.flesch_kincaid_grade(text)
+  def flesch_kincaid_grade(text)
     sentence_length = avg_sentence_length(text)
     syllables_per_word = avg_syllables_per_word(text)
-    flesch = (0.39 * sentence_length.to_f) + (11.8 * syllables_per_word.to_f) - 15.59
+    flesch = 0.39 * sentence_length + 11.8 * syllables_per_word - 15.59
     flesch.round(1)
   end
 
-  def self.polysyllab_count(text)
+  def polysyllab_count(text)
     count = 0
     text.split(' ').each do |word|
       w = syllable_count(word)
@@ -89,47 +124,44 @@ class TextStat
     count
   end
 
-  def self.smog_index(text)
+  def smog_index(text)
     sentences = sentence_count(text)
 
     if sentences >= 3
       begin
         polysyllab = polysyllab_count(text)
-        smog = (
-        (1.043 * (30 * (polysyllab / sentences))**0.5) + 3.1291)
-        return smog.round(1)
+        smog = (1.043 * (30.0 * (polysyllab / sentences))**0.5) + 3.1291
+        smog.round(1)
       rescue ZeroDivisionError
-        return 0.0
+        0.0
       end
     else
-      return 0.0
+      0.0
     end
   end
 
-  def self.coleman_liau_index(text)
-    letters   = (avg_letter_per_word(text) * 100).round(2)
+  def coleman_liau_index(text)
+    letters = (avg_letter_per_word(text) * 100).round(2)
     sentences = (avg_sentence_per_word(text) * 100).round(2)
-    coleman   = ((0.058 * letters) - (0.296 * sentences) - 15.8).to_f
+    coleman = 0.0588 * letters - 0.296 * sentences - 15.8
     coleman.round(2)
   end
 
-  def self.automated_readability_index(text)
-    chars     = char_count(text)
-    words     = lexicon_count(text)
+  def automated_readability_index(text)
+    chars = char_count(text)
+    words = lexicon_count(text)
     sentences = sentence_count(text)
-    begin
-      a = chars.to_f / words.to_f
-      b = words.to_f / sentences.to_f
 
-      readability = (
-      (4.71 * a.round(2) + (0.5 * b.round(2))) - 21.43)
-      return readability.round(1)
-    rescue ZeroDivisionError
-      return 0.0
-    end
+    return 0.0 if words.zero? || sentences.zero?
+
+    a = chars.to_f / words
+    b = words.to_f / sentences
+
+    readability = 4.71 * a + 0.5 * b - 21.43
+    readability.round(1)
   end
 
-  def self.linsear_write_formula(text)
+  def linsear_write_formula(text)
     easy_word = 0
     difficult_word = 0
     text_list = text.split(' ')[0..100]
@@ -144,78 +176,57 @@ class TextStat
 
     text = text_list.join(' ')
 
-    number = ((easy_word * 1 + difficult_word * 3) / sentence_count(text)).to_f
-    if number <= 20
-      number -= 2
-    end
-    return number / 2
+    number = (easy_word * 1 + difficult_word * 3) / sentence_count(text).to_f
+    number -= 2 if number <= 20
+    number / 2
   end
 
-  def self.difficult_words(text, language = 'en_us')
+  def difficult_words(text)
     require 'set'
-    easy_words = Set.new
-    File.read(File.join(dictionary_path, "#{language}.txt")).each_line do |line|
-      easy_words << line.chop
-    end
-
     text_list = text.downcase.gsub(/[^0-9a-z ]/i, '').split(' ')
     diff_words_set = Set.new
     text_list.each do |value|
-      unless easy_words.include? value
-        if syllable_count(value) > 1
-          diff_words_set.add(value)
-        end
-      end
+      next if easy_words.include? value
+
+      diff_words_set.add(value) if syllable_count(value) > 1
     end
-    return diff_words_set.length
+    diff_words_set.length
   end
 
-  def self.dale_chall_readability_score(text)
+  def dale_chall_readability_score(text)
     word_count = lexicon_count(text)
     count = word_count - difficult_words(text)
 
-    begin
-      per = count.to_f / word_count.to_f * 100
-    rescue ZeroDivisionError
-      return 0.0
-    end
+    return 0.0 if word_count.zero?
 
+    per = 100.0 * count / word_count
     difficult_words = 100 - per
-    score = (
-    (0.1579 * difficult_words)
-    + (0.0496 * avg_sentence_length(text)))
-
-    if difficult_words > 5
-      score += 3.6365
-    end
-    return score.round(2)
+    score = 0.1579 * difficult_words + 0.0496 * avg_sentence_length(text)
+    score += 3.6365 if difficult_words > 5
+    score.round(2)
   end
 
-  def self.gunning_fog(text)
-    begin
-      per_diff_words = (
-      (difficult_words(text) / lexicon_count(text) * 100) + 5)
-
-      grade = 0.4 * (avg_sentence_length(text) + per_diff_words)
-      return grade.round(2)
-    rescue ZeroDivisionError
-      return 0.0
-    end
+  def gunning_fog(text)
+    per_diff_words = 100.0 * difficult_words(text) / lexicon_count(text)
+    grade = 0.4 * (avg_sentence_length(text) + per_diff_words)
+    grade.round(2)
+  rescue ZeroDivisionError
+    0.0
   end
 
-  def self.lix(text)
+  def lix(text)
     words = text.split(' ')
     words_length = words.length
-    long_words = words.select { |word| word.length > 6 }.count
+    long_words = words.count { |word| word.length > 6 }
 
-    per_long_words = (long_words * 100).to_f / words_length
+    per_long_words = 100.0 * long_words / words_length
     asl = avg_sentence_length(text)
     lix = asl + per_long_words
 
-    return lix.round(2)
+    lix.round(2)
   end
 
-  def self.text_standard(text, float_output=nil)
+  def text_standard(text, float_output = nil)
     grade = []
 
     lower = flesch_kincaid_grade(text).round
@@ -287,17 +298,25 @@ class TextStat
     score = final_grade[0][0]
 
     if float_output
-      return score.to_f
+      score.to_f
     else
-      return "#{score.to_i - 1}th and #{score.to_i}th grade"
+      "#{score.to_i - 1}th and #{score.to_i}th grade"
     end
   end
 
-  def self.dictionary_path=(path)
-    @dictionary_path = path
+  private
+
+  def dictionary
+    @dictionary ||= Text::Hyphen.new(language: @language, left: 0, right: 0)
   end
 
-  def self.dictionary_path
-    @dictionary_path ||= File.join(TextStat::GEM_PATH, 'lib', 'dictionaries')
+  def easy_words
+    @easy_words ||= begin
+      words = Set.new
+      File.read(File.join(self.class.dictionary_path, "#{@language}.txt")).each_line do |line|
+        words << line.chop
+      end
+      words
+    end
   end
 end
